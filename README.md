@@ -37,7 +37,7 @@ The script generates and configures certificates, config files, systemd services
    `cd wazuh-installer`
 
 3. Запустите скрипт от root:  
-   `sudo bash install.sh`
+   `sudo bash wazuh.sh`
 
 ---
 
