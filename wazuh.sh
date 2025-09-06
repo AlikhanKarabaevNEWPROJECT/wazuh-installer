@@ -55,7 +55,7 @@ rm -rf "$SCRIPT_DIR/wazuh-certificates"
 apt-get install -y wazuh-indexer
 mkdir -p /etc/wazuh-indexer/certs
 cd /etc/wazuh-indexer/certs
-tar -xf "$SCRIPT_DIR/$TAR_NAME" -C . ./$HN.pem ./$HN-key.pem ./admin.pem ./admin-key.pem ./root-ca.pem
+tar -xf "$SCRIPT_DIR/$TAR_NAME" -C /etc/wazuh-indexer/certs $HN.pem $HN-key.pem admin.pem admin-key.pem root-ca.pem
 mv $HN.pem indexer.pem
 mv $HN-key.pem indexer-key.pem
 chmod 500 .
@@ -336,7 +336,7 @@ curl -s https://packages.wazuh.com/4.x/filebeat/wazuh-filebeat-0.4.tar.gz | tar 
 
 mkdir -p /etc/filebeat/certs
 cd /etc/filebeat/certs
-tar -xf "$SCRIPT_DIR/$TAR_NAME" -C . ./$HN.pem ./$HN-key.pem ./root-ca.pem
+tar -xf "$SCRIPT_DIR/$TAR_NAME" -C /etc/filebeat/certs $HN.pem $HN-key.pem root-ca.pem
 mv $HN.pem filebeat.pem
 mv $HN-key.pem filebeat-key.pem
 chmod 500 .
@@ -389,7 +389,7 @@ systemctl enable --now filebeat
 apt-get install -y wazuh-dashboard
 mkdir -p /etc/wazuh-dashboard/certs
 cd /etc/wazuh-dashboard/certs
-tar -xf "$SCRIPT_DIR/$TAR_NAME" -C . ./$HN.pem ./$HN-key.pem ./root-ca.pem
+tar -xf "$SCRIPT_DIR/$TAR_NAME" -C /etc/wazuh-dashboard/certs $HN.pem $HN-key.pem root-ca.pem
 mv $HN.pem dashboard.pem
 mv $HN-key.pem dashboard-key.pem
 chmod 500 .
