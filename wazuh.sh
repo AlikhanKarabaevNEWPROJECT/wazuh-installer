@@ -433,4 +433,114 @@ EOF
 
 systemctl enable --now wazuh-dashboard
 
+# === Добавляем кастомную интеграцию с Telegram ===
+INTEGRATION_DIR="/var/ossec/integrations"
+INTEGRATION_FILE="$INTEGRATION_DIR/custom-telegram"
+
+mkdir -p "$INTEGRATION_DIR"
+
+cat <<'EOF' > "$INTEGRATION_FILE"
+#!/usr/bin/env python3
+
+import sys
+import json
+import requests
+import subprocess
+
+CHAT_ID = "-491321111"  # <-- твой ID замени его
+hook_url = sys.argv[3]
+
+with open(sys.argv[1]) as alert_file:
+    alert_json = json.load(alert_file)
+
+alert_level = alert_json['rule'].get('level', 'N/A')
+description = alert_json['rule'].get('description', 'N/A')
+agent = alert_json.get('agent', {}).get('name', 'N/A')
+rule_id = alert_json['rule'].get('id', 'N/A')
+timestamp = alert_json.get('timestamp', 'N/A')
+ip = alert_json.get('agent', {}).get('ip', 'N/A')
+groups = ", ".join(alert_json['rule'].get('groups', []))
+srcip = alert_json.get('data', {}).get('srcip') or alert_json.get('srcip', 'N/A')
+
+# 🔌 Получение MAC-адреса источника
+def get_mac(ip):
+    try:
+        subprocess.run(["ping", "-c", "1", ip], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        arp_output = subprocess.check_output(["arp", "-an"]).decode()
+        for line in arp_output.splitlines():
+            if ip in line:
+                return line.split()[3]
+    except Exception:
+        return "N/A"
+
+mac = get_mac(srcip)
+
+# 🌍 Получение внешнего IP сервера
+def get_external_ip():
+    try:
+        return requests.get("https://api.ipify.org", timeout=3).text
+    except:
+        return "N/A"
+
+external_ip = get_external_ip()
+
+# 🔴 Emoji по уровню
+severity = int(alert_level)
+if severity >= 10:
+    emoji = "🔴"
+elif severity >= 7:
+    emoji = "🟠"
+else:
+    emoji = "🟡"
+
+# 🧾 Инфо о файле (если есть)
+syscheck = alert_json.get('syscheck', {})
+file_path = syscheck.get('path', 'N/A')
+md5 = syscheck.get('md5_after', 'N/A')
+sha1 = syscheck.get('sha1_after', 'N/A')
+sha256 = syscheck.get('sha256_after', 'N/A')
+file_size = syscheck.get('size_after', 'N/A')
+file_owner = syscheck.get('uname_after', 'N/A')
+file_group = syscheck.get('gname_after', 'N/A')
+file_perm = syscheck.get('perm_after', 'N/A')
+
+# 📩 Собираем сообщение
+message = f"""🚨 WAZUH ALERT
+{emoji} Severity: {alert_level}
+📝 Rule ID: {rule_id}
+🕒 Time: {timestamp}
+💬 Description: {description}
+📁 File: {file_path}
+
+📦 Size: {file_size} bytes
+👤 Owner: {file_owner}
+🤝‍ Group: {file_group}
+🔒 Permissions: {file_perm}
+
+🖥 Agent: {agent}
+🌐 Agent IP: {ip}
+📡 Source IP: {srcip}
+🌍 External IP (this server): {external_ip}
+🔗 MAC: {mac}
+🏷 Groups: {groups}
+
+🔑 MD5: {md5}
+🔐 SHA1: {sha1}
+🔐 SHA256: {sha256}
+"""
+
+# 🚀 Отправка в Telegram
+msg_data = {
+    'chat_id': CHAT_ID,
+    'text': message
+}
+headers = {'Content-Type': 'application/json'}
+requests.post(hook_url, headers=headers, data=json.dumps(msg_data))
+
+EOF
+
+chmod +x "$INTEGRATION_FILE"
+echo "[+] Кастомная интеграция Telegram добавлена: $INTEGRATION_FILE"
+
+
 echo -e "\n[✓] Установка Wazuh завершена успешно. Открой: https://$IP/"
