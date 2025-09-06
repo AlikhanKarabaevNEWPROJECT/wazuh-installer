@@ -12,6 +12,11 @@ set -e
 IP=$(hostname -I | awk '{print $1}')
 HN=$(hostname)
 
+SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+
+
+
+
 echo "[+] Hostname: $HN"
 echo "[+] IP: $IP"
 echo "[+] Установка зависимостей..."
@@ -27,7 +32,7 @@ apt-get update
 
 # Генерация сертификатов
 curl -sO https://packages.wazuh.com/4.12/wazuh-certs-tool.sh
-cat <<EOF > ./config.yml
+cat <<EOF > "$SCRIPT_DIR/config.yml"
 nodes:
   indexer:
     - name: $HN
@@ -40,17 +45,17 @@ nodes:
       ip: $IP
 EOF
 
-bash ./wazuh-certs-tool.sh -A
+bash "$SCRIPT_DIR/wazuh-certs-tool.sh" -A
 
 TAR_NAME=wazuh-certificates.tar
-tar -cvf $TAR_NAME -C ./wazuh-certificates/ .
-rm -rf ./wazuh-certificates
+tar -cvf "$SCRIPT_DIR/$TAR_NAME" -C "$SCRIPT_DIR/wazuh-certificates/" .
+rm -rf "$SCRIPT_DIR/wazuh-certificates"
 
 # Indexer
 apt-get install -y wazuh-indexer
 mkdir -p /etc/wazuh-indexer/certs
 cd /etc/wazuh-indexer/certs
-tar -xf /root/$TAR_NAME -C . ./$HN.pem ./$HN-key.pem ./admin.pem ./admin-key.pem ./root-ca.pem
+tar -xf "$SCRIPT_DIR/$TAR_NAME" -C . ./$HN.pem ./$HN-key.pem ./admin.pem ./admin-key.pem ./root-ca.pem
 mv $HN.pem indexer.pem
 mv $HN-key.pem indexer-key.pem
 chmod 500 .
@@ -331,7 +336,7 @@ curl -s https://packages.wazuh.com/4.x/filebeat/wazuh-filebeat-0.4.tar.gz | tar 
 
 mkdir -p /etc/filebeat/certs
 cd /etc/filebeat/certs
-tar -xf /root/$TAR_NAME -C . ./$HN.pem ./$HN-key.pem ./root-ca.pem
+tar -xf "$SCRIPT_DIR/$TAR_NAME" -C . ./$HN.pem ./$HN-key.pem ./root-ca.pem
 mv $HN.pem filebeat.pem
 mv $HN-key.pem filebeat-key.pem
 chmod 500 .
@@ -384,7 +389,7 @@ systemctl enable --now filebeat
 apt-get install -y wazuh-dashboard
 mkdir -p /etc/wazuh-dashboard/certs
 cd /etc/wazuh-dashboard/certs
-tar -xf /root/$TAR_NAME -C . ./$HN.pem ./$HN-key.pem ./root-ca.pem
+tar -xf "$SCRIPT_DIR/$TAR_NAME" -C . ./$HN.pem ./$HN-key.pem ./root-ca.pem
 mv $HN.pem dashboard.pem
 mv $HN-key.pem dashboard-key.pem
 chmod 500 .
