@@ -52,15 +52,22 @@ tar -cvf "$SCRIPT_DIR/$TAR_NAME" -C "$SCRIPT_DIR/wazuh-certificates/" .
 rm -rf "$SCRIPT_DIR/wazuh-certificates"
 
 # Indexer
+
 apt-get install -y wazuh-indexer
 mkdir -p /etc/wazuh-indexer/certs
 cd /etc/wazuh-indexer/certs
-tar -xf "$SCRIPT_DIR/$TAR_NAME" -C /etc/wazuh-indexer/certs $HN.pem $HN-key.pem admin.pem admin-key.pem root-ca.pem
-mv $HN.pem indexer.pem
-mv $HN-key.pem indexer-key.pem
+
+# извлекаем все
+tar -xf "$SCRIPT_DIR/$TAR_NAME"
+
+# Переименовываем сертификаты под Indexer
+mv "$HN.pem" indexer.pem
+mv "$HN-key.pem" indexer-key.pem
+
 chmod 500 .
 chmod 400 *
 chown -R wazuh-indexer:wazuh-indexer .
+
 
 cat <<EOF > /etc/wazuh-indexer/opensearch.yml
 network.host: $IP
@@ -336,12 +343,18 @@ curl -s https://packages.wazuh.com/4.x/filebeat/wazuh-filebeat-0.4.tar.gz | tar 
 
 mkdir -p /etc/filebeat/certs
 cd /etc/filebeat/certs
-tar -xf "$SCRIPT_DIR/$TAR_NAME" -C /etc/filebeat/certs $HN.pem $HN-key.pem root-ca.pem
-mv $HN.pem filebeat.pem
-mv $HN-key.pem filebeat-key.pem
+
+# Извлекаем все файлы
+tar -xf "$SCRIPT_DIR/$TAR_NAME"
+
+# Переименовываем сертификаты под Filebeat
+mv "$HN.pem" filebeat.pem
+mv "$HN-key.pem" filebeat-key.pem
+
 chmod 500 .
 chmod 400 *
 chown -R root:root .
+
 
 cat <<EOF > /etc/filebeat/filebeat.yml
 output.elasticsearch:
@@ -386,15 +399,22 @@ echo admin | filebeat keystore add password --stdin --force
 systemctl enable --now filebeat
 
 # Dashboard
+
 apt-get install -y wazuh-dashboard
 mkdir -p /etc/wazuh-dashboard/certs
 cd /etc/wazuh-dashboard/certs
-tar -xf "$SCRIPT_DIR/$TAR_NAME" -C /etc/wazuh-dashboard/certs $HN.pem $HN-key.pem root-ca.pem
-mv $HN.pem dashboard.pem
-mv $HN-key.pem dashboard-key.pem
+
+# Извлекаем все файлы из архива
+tar -xf "$SCRIPT_DIR/$TAR_NAME"
+
+# Переименовываем сертификаты под Dashboard
+mv "$HN.pem" dashboard.pem
+mv "$HN-key.pem" dashboard-key.pem
+
 chmod 500 .
 chmod 400 *
 chown -R wazuh-dashboard:wazuh-dashboard .
+
 
 cat <<EOF > /etc/wazuh-dashboard/opensearch_dashboards.yml
 server.host: 0.0.0.0
